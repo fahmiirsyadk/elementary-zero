@@ -1,0 +1,29 @@
+diff --git a/src/Views/SearchView.vala b/src/Views/SearchView.vala
+index 472eb723..c2323a08 100644
+--- a/src/Views/SearchView.vala
++++ b/src/Views/SearchView.vala
+@@ -141,6 +141,7 @@ public class Slingshot.Widgets.SearchView : Gtk.Bin {
+             Idle.add (() => {
+                 var search_item = row as SearchItem;
+                 switch (search_item.result_type) {
++                    case ResultType.CALCULATION:
+                     case ResultType.APP_ACTIONS:
+                     case ResultType.LINK:
+                     case ResultType.SETTINGS:
+diff --git a/src/synapse-plugins/calculator-plugin/calculator-plugin.vala b/src/synapse-plugins/calculator-plugin/calculator-plugin.vala
+index 089b8278..6b947014 100644
+--- a/src/synapse-plugins/calculator-plugin/calculator-plugin.vala
++++ b/src/synapse-plugins/calculator-plugin/calculator-plugin.vala
+@@ -41,6 +41,11 @@ namespace Synapse {
+                         text_origin: Synapse.TextOrigin.UNKNOWN
+                 );
+             }
++
++            public override void execute (Synapse.Match? match) {
++                var clipboard = Gtk.Clipboard.get_default (Gdk.Display.get_default ());
++                clipboard.set_text (text, -1);
++            }
+         }
+ 
+         static void register_plugin () {
+

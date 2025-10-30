@@ -1,0 +1,7 @@
+upstream:
+  git: https://github.com/elementary/applications-menu.git
+  branch: master
+  pinned_sha: "8bcdcb49a1bc4227f09c305ca17150d02b4d4ea0"  # latest commit on master branch
+
+patches:
+  - patches/calculator-crash-fix.patch
