@@ -3,8 +3,11 @@
 Unofficial elementary OS patches and modified packages with latest upstream
 
 
-## Bug fixed / Modified package list
+## Bug fixed
 - [x] slingshot-launcher (applications-menu) [issue](https://github.com/elementary/applications-menu/issues/677) | [patch](https://github.com/fahmiirsyadk/elementary-zero/blob/main/recipes/applications-menu/patches/calculator-crash-fix.patch)
+
+## Modified packages
+- file search feature on application menu 
 
 ## Setup
 1. install nix, this is required for build process [Nix](https://nixos.org/download/).
