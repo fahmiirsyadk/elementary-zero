@@ -74,10 +74,10 @@ index e913d34e..d504c851 100644
      'synapse-plugins/appcenter-plugin.vala',
 diff --git a/src/synapse-plugins/file-search-plugin.vala b/src/synapse-plugins/file-search-plugin.vala
 new file mode 100644
-index 00000000..a8a19e86
+index 00000000..8f958653
 --- /dev/null
 +++ b/src/synapse-plugins/file-search-plugin.vala
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,209 @@
 +/*
 + * File Search Plugin for Slingshot
 + *
