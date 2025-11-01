@@ -1,5 +1,5 @@
 diff --git a/src/Backend/App.vala b/src/Backend/App.vala
-index 4ec6f986..bb2182d4 100644
+index 4ec6f986..1d604ada 100644
 --- a/src/Backend/App.vala
 +++ b/src/Backend/App.vala
 @@ -154,10 +154,17 @@ public class Slingshot.Backend.App : Object {
@@ -14,7 +14,7 @@ index 4ec6f986..bb2182d4 100644
 +                            if (actions.size > 0) {
 +                                actions.get (0).execute_with_target (match);
 +                            } else {
-+                                // Fallback: execute the match itself (e.g., file open)
++                                // No actions available, execute match directly (e.g., file open for file search matches)
 +                                match.execute (null);
 +                            }
 +                        } else {
@@ -24,7 +24,7 @@ index 4ec6f986..bb2182d4 100644
                      break;
              }
 diff --git a/src/Backend/SynapseSearch.vala b/src/Backend/SynapseSearch.vala
-index 7c462f62..c27fe659 100644
+index 7c462f62..6153c924 100644
 --- a/src/Backend/SynapseSearch.vala
 +++ b/src/Backend/SynapseSearch.vala
 @@ -29,7 +29,8 @@ namespace Slingshot.Backend {
@@ -37,144 +37,105 @@ index 7c462f62..c27fe659 100644
          };
  
          private static Synapse.DataSink? sink = null;
-@@ -53,6 +54,7 @@ namespace Slingshot.Backend {
- 
-             if (current_search != null)
-                 current_search.cancel ();
-+            current_search = new Cancellable ();
- 
-             if (provider == null)
-                 provider = sink;
 diff --git a/src/SlingshotView.vala b/src/SlingshotView.vala
-index cf9bbe89..ee13e556 100644
+index cf9bbe89..affacb65 100644
 --- a/src/SlingshotView.vala
 +++ b/src/SlingshotView.vala
-@@ -137,6 +137,8 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
-             if (modality != Modality.SEARCH_VIEW) {
-                 set_modality (Modality.SEARCH_VIEW);
-             }
-             search.begin (search_entry.text);
-         });
+@@ -350,6 +350,7 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
+         if (modality != Modality.SEARCH_VIEW)
+             set_modality (Modality.SEARCH_VIEW);
  
-@@ -359,8 +361,11 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
-             matches = yield synapse.search (text);
++        string query_text = text;
+         Gee.List<Synapse.Match> matches;
+ 
+         if (search_match != null) {
+@@ -360,7 +361,9 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
          }
  
          Idle.add (() => {
 -            search_view.set_results (matches, text);
-+            if (search_entry.text == text) {
++            if (search_entry.text == query_text) {
 +                search_view.set_results (matches, text);
 +            }
              return false;
          });
      }
-diff --git a/src/Views/SearchView.vala b/src/Views/SearchView.vala
-index 472eb723..517cbb66 100644
---- a/src/Views/SearchView.vala
-+++ b/src/Views/SearchView.vala
-@@ -97,6 +97,7 @@ public class Slingshot.Widgets.SearchView : Gtk.Bin {
-             activate_on_single_click = true,
-             selection_mode = BROWSE
-         };
-         list_box.set_sort_func ((row1, row2) => update_sort (row1, row2));
-         list_box.set_header_func ((Gtk.ListBoxUpdateHeaderFunc) update_header);
-         list_box.set_placeholder (alert_view);
-@@ -141,6 +142,7 @@ public class Slingshot.Widgets.SearchView : Gtk.Bin {
-             Idle.add (() => {
-                 var search_item = row as SearchItem;
-                 switch (search_item.result_type) {
-+                    case ResultType.CALCULATION:
-                     case ResultType.APP_ACTIONS:
-                     case ResultType.LINK:
-                     case ResultType.SETTINGS:
-@@ -292,12 +294,7 @@ public class Slingshot.Widgets.SearchView : Gtk.Bin {
-     }
- 
-     private int update_sort (Gtk.ListBoxRow row1, Gtk.ListBoxRow row2) {
--        var item1 = row1 as SearchItem;
--        var item2 = row2 as SearchItem;
--        if (item1.result_type != item2.result_type) {
--            return item1.result_type - item2.result_type;
--        }
--
-         return 0;
-     }
- 
 diff --git a/src/meson.build b/src/meson.build
-index e913d34e..28360321 100644
+index e913d34e..d504c851 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -63,6 +63,7 @@ sources = [
-     'synapse-plugins/command-plugin.vala',
+@@ -64,6 +64,7 @@ sources = [
      'synapse-plugins/desktop-file-plugin.vala',
      'synapse-plugins/file-bookmarks-plugin.vala',
-+    'synapse-plugins/file-search-plugin.vala',
      'synapse-plugins/switchboard-plugin.vala',
++    'synapse-plugins/file-search-plugin.vala',
      'synapse-plugins/system-managment.vala',
      'synapse-plugins/link-plugin.vala',
-diff --git a/src/synapse-plugins/calculator-plugin/calculator-plugin.vala b/src/synapse-plugins/calculator-plugin/calculator-plugin.vala
-index 089b8278..5d2144e4 100644
---- a/src/synapse-plugins/calculator-plugin/calculator-plugin.vala
-+++ b/src/synapse-plugins/calculator-plugin/calculator-plugin.vala
-@@ -41,6 +41,11 @@ namespace Synapse {
-                         text_origin: Synapse.TextOrigin.UNKNOWN
-                 );
-             }
-+
-+            public override void execute (Synapse.Match? match) {
-+                var clipboard = Gtk.Clipboard.get_default (Gdk.Display.get_default ());
-+                clipboard.set_text (text, -1);
-+            }
-         }
- 
-         static void register_plugin () {
-@@ -70,7 +75,7 @@ namespace Synapse {
- 
-                 Result result = new Result (d, query.query_string);
-                 result.description = "%s\n%s".printf (
--                    "%s = %s".printf (query.query_string, d),
-+                    "%s = %s".printf (qs, d),
-                     Granite.TOOLTIP_SECONDARY_TEXT_MARKUP.printf (_("Click to copy result to clipboard"))
-                 );  // Used for search item tooltip
- 
+     'synapse-plugins/appcenter-plugin.vala',
 diff --git a/src/synapse-plugins/file-search-plugin.vala b/src/synapse-plugins/file-search-plugin.vala
 new file mode 100644
-index 00000000..47723a50
+index 00000000..a8a19e86
 --- /dev/null
 +++ b/src/synapse-plugins/file-search-plugin.vala
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,221 @@
 +/*
-+* Search files features plugin using fd when available, with GLib fallback
-+*/
++ * File Search Plugin for Slingshot
++ *
++ * This plugin allows you to search for files in the home directory and subdirectories.
++ *
++ */
 +
 +namespace Synapse {
 +    public class FileSearchPlugin : Object, Activatable, ItemProvider {
++        private const int MAX_RESULTS = 50;
++        private const int MAX_SEARCH_DEPTH = 3;
++        private const int MIN_QUERY_LENGTH = 2;
++
 +        public bool enabled { get; set; default = true; }
 +
 +        public void activate () { }
 +        public void deactivate () { }
 +
 +        public class Result : Synapse.Match {
-+            private GLib.File file;
++            private File file;
 +
-+            public Result (GLib.File f) {
++            public Result (File f) {
 +                string? path = f.get_path ();
 +                string? basename = f.get_basename ();
 +                string icon = "text-x-generic";
++
 +                try {
 +                    var info = f.query_info (FileAttribute.STANDARD_CONTENT_TYPE, FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
 +                    unowned string? ctype = info.get_content_type ();
 +                    if (ctype != null) {
-+                        if (ctype.has_prefix ("image/")) icon = "image-x-generic";
-+                        else if (ctype.has_prefix ("video/")) icon = "video-x-generic";
-+                        else if (ctype.has_prefix ("audio/")) icon = "audio-x-generic";
-+                        else if (ctype.has_prefix ("application/pdf")) icon = "application-pdf";
++                        if (ctype.has_prefix ("image/")) {
++                            icon = "image-x-generic";
++                        } else if (ctype.has_prefix ("video/")) {
++                            icon = "video-x-generic";
++                        } else if (ctype.has_prefix ("audio/")) {
++                            icon = "audio-x-generic";
++                        } else if (ctype.has_prefix ("application/pdf")) {
++                            icon = "application-pdf";
++                        }
 +                    }
-+                } catch (Error e) { }
++                } catch (Error e) {
++                    // Content type may not be available for certain files or permissions may be lacking
++                }
++
++                string title_text;
++                if (basename != null && basename != "") {
++                    title_text = basename;
++                } else if (path != null) {
++                    title_text = path;
++                } else {
++                    title_text = f.get_uri ();
++                }
++
++                string desc_text = path != null ? path : f.get_uri ();
 +
 +                Object (
-+                    title: (basename != null && basename != "") ? basename : (path != null ? path : f.get_uri ()),
-+                    description: (path != null ? path : f.get_uri ()),
++                    title: title_text,
++                    description: desc_text,
 +                    icon_name: icon,
 +                    match_type: MatchType.GENERIC_URI
 +                );
@@ -192,14 +153,22 @@ index 00000000..47723a50
 +        }
 +
 +        public class RevealResult : Synapse.Match {
-+            private GLib.File file;
++            private File file;
 +
-+            public RevealResult (GLib.File f) {
++            public RevealResult (File f) {
 +                string? path = f.get_path ();
 +                string? basename = f.get_basename ();
 +                string? parent = f.get_parent () != null ? f.get_parent ().get_path () : null;
++
++                string title_text;
++                if (basename != null && basename != "") {
++                    title_text = _("Show in Files: %s").printf (basename);
++                } else {
++                    title_text = _("Show in Files");
++                }
++
 +                Object (
-+                    title: (basename != null && basename != "") ? _("Show in Files: %s").printf (basename) : _("Show in Files"),
++                    title: title_text,
 +                    description: parent ?? f.get_uri (),
 +                    icon_name: "folder",
 +                    match_type: MatchType.GENERIC_URI
@@ -234,65 +203,50 @@ index 00000000..47723a50
 +            register_plugin ();
 +        }
 +
-+        private bool has_fd () {
-+            return Environment.find_program_in_path ("fd") != null;
-+        }
-+
 +        public async ResultSet? search (Query q) throws SearchError {
 +            string query = q.query_string.strip ();
-+            if (query.length < 2) return null;
++            if (query.length < MIN_QUERY_LENGTH) {
++                return null;
++            }
 +
 +            var matchers = Query.get_matchers_for_query (q.query_string_folded, 0);
 +            var results = new ResultSet ();
 +
-+            if (has_fd ()) {
-+                yield search_with_fd (q, matchers, results);
-+            } else {
-+                yield search_with_glib (q, matchers, results);
-+            }
++            yield search_files (q, matchers, results);
 +
 +            return results;
 +        }
 +
-+        private async void search_with_fd (Query q, Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results) {
-+            var launcher = new GLib.SubprocessLauncher (GLib.SubprocessFlags.STDOUT_PIPE | GLib.SubprocessFlags.STDERR_SILENCE);
-+            string home = Environment.get_home_dir ();
-+            string[] argv = { "fd", "--color=never", "-HI", "-d", "4", "-t", "f", "--max-results", "50", q.query_string, home };
-+            try {
-+                var sp = launcher.spawnv (argv);
-+                string out_str;
-+                string err_str;
-+                yield sp.communicate_utf8_async (null, null, out out_str, out err_str);
-+                if (q.is_cancelled ()) return;
-+                var lines = out_str.split ("\n");
-+                int added = 0;
-+                foreach (var line in lines) {
-+                    if (line.strip ().length == 0) continue;
-+                    var f = File.new_for_path (line);
-+                    added = add_if_match (q, matchers, results, f, added);
-+                    if (added >= 50) break;
-+                }
-+            } catch (Error e) {
-+                debug ("fd search failed: %s", e.message);
-+            }
-+        }
-+
-+        private async void search_with_glib (Query q, Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results) {
++        private async void search_files (Query q, Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results) {
 +            int added = 0;
-+            added = yield walk_dir (q, matchers, results, File.new_for_path (Environment.get_home_dir ()), 0, 3, added);
++            added = yield walk_dir (q, matchers, results, File.new_for_path (Environment.get_home_dir ()), 0, MAX_SEARCH_DEPTH, added);
 +        }
 +
 +        private async int walk_dir (Query q, Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results, File dir, int depth, int max_depth, int added) {
-+            if (q.is_cancelled () || added >= 50) return added;
-+            if (depth > max_depth) return added;
++            if (q.is_cancelled () || added >= MAX_RESULTS) {
++                return added;
++            }
++
++            if (depth > max_depth) {
++                return added;
++            }
++
 +            try {
 +                var enumerator = yield dir.enumerate_children_async ("standard::name,standard::type,standard::is-hidden,standard::is-backup", FileQueryInfoFlags.NOFOLLOW_SYMLINKS);
 +                while (true) {
-+                    GLib.List<FileInfo> infos = yield enumerator.next_files_async (50);
-+                    if (infos == null || infos.length () == 0) break;
++                    List<FileInfo> infos = yield enumerator.next_files_async (MAX_RESULTS);
++                    if (infos == null || infos.length () == 0) {
++                        break;
++                    }
++
 +                    foreach (FileInfo info in infos) {
-+                        if (q.is_cancelled () || added >= 50) return added;
-+                        if (info.get_is_hidden () || info.get_is_backup ()) continue;
++                        if (q.is_cancelled () || added >= MAX_RESULTS) {
++                            return added;
++                        }
++
++                        if (info.get_is_hidden () || info.get_is_backup ()) {
++                            continue;
++                        }
 +
 +                        var child = dir.get_child (info.get_name ());
 +                        if (info.get_file_type () == FileType.DIRECTORY) {
@@ -300,18 +254,23 @@ index 00000000..47723a50
 +                        } else if (info.get_file_type () == FileType.REGULAR) {
 +                            added = add_if_match (q, matchers, results, child, added);
 +                        }
-+                        if (added >= 50) return added;
++
++                        if (added >= MAX_RESULTS) {
++                            return added;
++                        }
 +                    }
 +                }
 +            } catch (Error e) {
-+                // ignore directories we can't read
++                // Silently skip directories we don't have permission to read
 +            }
++
 +            return added;
 +        }
 +
 +        private int add_if_match (Query q, Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results, File f, int added) {
 +            string? bn = f.get_basename ();
 +            string basename = (bn != null) ? bn.down () : "";
++
 +            foreach (var matcher in matchers) {
 +                MatchInfo mi;
 +                if (matcher.key.match (basename, 0, out mi)) {
@@ -328,5 +287,4 @@ index 00000000..47723a50
 +        }
 +    }
 +}
-+
-+
+\ No newline at end of file
