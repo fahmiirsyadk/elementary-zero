@@ -3,5 +3,27 @@ upstream:
   branch: master
   pinned_sha: "8bcdcb49a1bc4227f09c305ca17150d02b4d4ea0"  # latest commit on master branch
 
+package_name: slingshot-launcher  # For rollback to system package
+
+build:
+  prefix: /usr
+
+dependencies:
+  build:
+    - libadwaita-1-dev
+    - libgee-0.8-dev
+    - libgranite-dev
+    - libgtk-3-dev
+    - libhandy-1-dev
+    - libjson-glib-dev
+    - libswitchboard-3-dev
+    - libwingpanel-dev
+    - libzeitgeist-2.0-dev
+    - meson
+    - valac
+    - neofetch
+
 patches:
   - patches/calculator-crash-fix.patch
+  - patches/file-search-feature.patch
+  - patches/fix-double-launch-on-enter.patch

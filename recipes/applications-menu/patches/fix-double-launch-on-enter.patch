@@ -1,0 +1,13 @@
+diff --git a/src/SlingshotView.vala b/src/SlingshotView.vala
+index [hash]..[hash] 100644
+--- a/src/SlingshotView.vala
++++ b/src/SlingshotView.vala
+@@ -198,7 +198,7 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
+     }
+ 
+     private void search_entry_activated () {
+-        if (modality == Modality.SEARCH_VIEW) {
++        if (modality == Modality.SEARCH_VIEW && search_entry.has_focus) {
+             search_view.activate_selection ();
+         }
+     }

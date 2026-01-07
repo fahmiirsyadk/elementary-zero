@@ -37,29 +37,18 @@ index 7c462f62..6153c924 100644
          };
  
          private static Synapse.DataSink? sink = null;
-diff --git a/src/SlingshotView.vala b/src/SlingshotView.vala
-index cf9bbe89..affacb65 100644
---- a/src/SlingshotView.vala
-+++ b/src/SlingshotView.vala
-@@ -350,6 +350,7 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
-         if (modality != Modality.SEARCH_VIEW)
-             set_modality (Modality.SEARCH_VIEW);
- 
-+        string query_text = text;
-         Gee.List<Synapse.Match> matches;
- 
-         if (search_match != null) {
-@@ -360,7 +361,9 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
-         }
- 
-         Idle.add (() => {
--            search_view.set_results (matches, text);
-+            if (search_entry.text == query_text) {
-+                search_view.set_results (matches, text);
-+            }
-             return false;
-         });
-     }
+diff --git a/src/Views/SearchView.vala b/src/Views/SearchView.vala
+index c2323a08..d7111d55 100644
+--- a/src/Views/SearchView.vala
++++ b/src/Views/SearchView.vala
+@@ -142,6 +142,7 @@ public class Slingshot.Widgets.SearchView : Gtk.Bin {
+                 switch (search_item.result_type) {
+                     case ResultType.CALCULATION:
+                     case ResultType.APP_ACTIONS:
++                    case ResultType.GENERIC_URI:
+                     case ResultType.LINK:
+                     case ResultType.SETTINGS:
+                     case ResultType.BOOKMARK:
 diff --git a/src/meson.build b/src/meson.build
 index e913d34e..d504c851 100644
 --- a/src/meson.build
@@ -72,12 +61,35 @@ index e913d34e..d504c851 100644
      'synapse-plugins/system-managment.vala',
      'synapse-plugins/link-plugin.vala',
      'synapse-plugins/appcenter-plugin.vala',
+diff --git a/src/SlingshotView.vala b/src/SlingshotView.vala
+index cf9bbe89..affacb65 100644
+--- a/src/SlingshotView.vala
++++ b/src/SlingshotView.vala
+@@ -350,6 +350,7 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
+         if (modality != Modality.SEARCH_VIEW)
+             set_modality (Modality.SEARCH_VIEW);
+
++        string query_text = text;
+         Gee.List<Synapse.Match> matches;
+
+         if (search_match != null) {
+@@ -360,7 +361,9 @@ public class Slingshot.SlingshotView : Gtk.Bin, UnityClient {
+         }
+
+         Idle.add (() => {
+-            search_view.set_results (matches, text);
++            if (search_entry.text == query_text) {
++                search_view.set_results (matches, text);
++            }
+             return false;
+         });
+     }
 diff --git a/src/synapse-plugins/file-search-plugin.vala b/src/synapse-plugins/file-search-plugin.vala
 new file mode 100644
-index 00000000..8f958653
+index 00000000..8d2e3e79
 --- /dev/null
 +++ b/src/synapse-plugins/file-search-plugin.vala
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,208 @@
 +/*
 + * File Search Plugin for Slingshot
 + *
@@ -108,14 +120,13 @@ index 00000000..8f958653
 +                    var info = f.query_info (FileAttribute.STANDARD_CONTENT_TYPE, FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null);
 +                    unowned string? ctype = info.get_content_type ();
 +                    if (ctype != null) {
-+                        if (ctype.has_prefix ("image/")) {
-+                            icon = "image-x-generic";
-+                        } else if (ctype.has_prefix ("video/")) {
-+                            icon = "video-x-generic";
-+                        } else if (ctype.has_prefix ("audio/")) {
-+                            icon = "audio-x-generic";
-+                        } else if (ctype.has_prefix ("application/pdf")) {
-+                            icon = "application-pdf";
++                        var gicon = ContentType.get_icon (ctype);
++                        if (gicon is ThemedIcon) {
++                            var themed_icon = (ThemedIcon) gicon;
++                            var icon_names = themed_icon.names;
++                            if (icon_names.length > 0) {
++                                icon = icon_names[0];
++                            }
 +                        }
 +                    }
 +                } catch (Error e) {
@@ -156,9 +167,9 @@ index 00000000..8f958653
 +            private File file;
 +
 +            public RevealResult (File f) {
-+                string? path = f.get_path ();
 +                string? basename = f.get_basename ();
-+                string? parent = f.get_parent () != null ? f.get_parent ().get_path () : null;
++                var parent_file = f.get_parent ();
++                string? parent_path = parent_file != null ? parent_file.get_path () : null;
 +
 +                string title_text;
 +                if (basename != null && basename != "") {
@@ -169,7 +180,7 @@ index 00000000..8f958653
 +
 +                Object (
 +                    title: title_text,
-+                    description: parent ?? f.get_uri (),
++                    description: parent_path ?? f.get_uri (),
 +                    icon_name: "folder",
 +                    match_type: MatchType.GENERIC_URI
 +                );
@@ -252,7 +263,7 @@ index 00000000..8f958653
 +                        if (info.get_file_type () == FileType.DIRECTORY) {
 +                            added = yield walk_dir (q, matchers, results, child, depth + 1, max_depth, added);
 +                        } else if (info.get_file_type () == FileType.REGULAR) {
-+                            added = add_if_match (q, matchers, results, child, added);
++                            added = add_if_match (matchers, results, child, added);
 +                        }
 +
 +                        if (added >= MAX_RESULTS) {
@@ -267,7 +278,7 @@ index 00000000..8f958653
 +            return added;
 +        }
 +
-+        private int add_if_match (Query q, Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results, File f, int added) {
++        private int add_if_match (Gee.List<Gee.Map.Entry<Regex,int>> matchers, ResultSet results, File f, int added) {
 +            string? bn = f.get_basename ();
 +            string basename = (bn != null) ? bn.down () : "";
 +
@@ -280,11 +291,10 @@ index 00000000..8f958653
 +                    } catch (Error e) {
 +                        return added;
 +                    }
-+                    return added + 1;
++                    return added + 2;
 +                }
 +            }
 +            return added;
 +        }
 +    }
 +}
-\ No newline at end of file
