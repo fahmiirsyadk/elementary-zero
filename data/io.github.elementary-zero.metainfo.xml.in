@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.elementary-zero</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  
+  <name>elementary-zero</name>
+  <summary>Package patcher for elementary OS</summary>
+  <description>
+    <p>
+      elementary-zero is a graphical application for managing and applying patches
+      to elementary OS packages. It allows you to build, install, and rollback
+      modified packages with an easy-to-use interface.
+    </p>
+    <p>
+      Features:
+    </p>
+    <ul>
+      <li>Download patches directly from GitHub</li>
+      <li>Build modified packages with one click</li>
+      <li>Install patches with administrator privileges</li>
+      <li>Rollback to original system packages</li>
+    </ul>
+  </description>
+  
+  <url type="homepage">https://github.com/fahmiirsyadk/elementary-zero</url>
+  <url type="bugtracker">https://github.com/fahmiirsyadk/elementary-zero/issues</url>
+
+  <developer_name>fahmiirsyadk</developer_name>
+  
+  <content_rating type="oars-1.1"/>
+
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </recommends>
+
+  <requires>
+    <internet>always</internet>
+  </requires>
+
+  <releases>
+    <release version="1.0.0" date="2026-01-07">
+      <description>
+        <p>Initial release</p>
+        <ul>
+          <li>Download recipes from GitHub</li>
+          <li>Build and install patches</li>
+          <li>Rollback support</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <custom>
+    <value key="x-appcenter-color-primary">#3689e6</value>
+    <value key="x-appcenter-color-primary-text">#ffffff</value>
+  </custom>
+</component>
+
+
+

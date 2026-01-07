@@ -1,20 +1,58 @@
-# elementary 0
+# Elementary Zero
+Tool to patch several issue & extra features for elementary OS
 
-Unofficial elementary OS patches and modified packages with latest upstream
+### Background
 
+My reason is simple: I use elementary OS as my main operating system. I love how it looks and its simplicity classic yet modern. However, nothing is perfect, and there are some issues I need to deal with. This tool helps me apply patches and fix the issues I encounter.
 
-## Bug fixed
-- [x] slingshot-launcher (applications-menu) [issue](https://github.com/elementary/applications-menu/issues/677) | [patch](https://github.com/fahmiirsyadk/elementary-zero/blob/main/recipes/applications-menu/patches/calculator-crash-fix.patch)
+## Patches
 
-## Modified packages
-- file search feature on application menu 
+### applications-menu
 
-## Setup
-1. install nix, this is required for build process [Nix](https://nixos.org/download/).
-2. run `nix-shell` and you ready to go.
-3. cd recipes/<packages_you_want_to_patch>
-4. run build `./build.sh` and then to install (overwrite existing package) `./install.sh`
-5. you can rollback using `./rollback.sh`
+* **calculator-crash-fix.patch** - Fixes crash when tyring to copy/click calculator results from search. Adds clipboard copy functionality for calculator results.
 
-## Warning
-This might be or likely can crash you system, but all patches already tested on VM so its safe.
+* **file-search-feature.patch** - Adds file search functionality to the applications menu. Like search and you can open it directly without navigation from file manager.
+
+* **fix-double-launch-on-enter.patch** - Fixes bug where pressing Enter after searching would launch applications twice. Prevents duplicate application launches.
+
+## Building and Installation
+
+You'll need the following dependencies:
+
+* libgee-0.8-dev
+* libgranite-7-dev >= 7.7.0
+* libgtk-4-dev >= 4.10.0
+* libjson-glib-dev
+* libsoup-3.0-dev >= 3.0.0
+* libswitchboard-3-dev >= 8.0.0
+* meson >= 0.59.0
+* valac >= 0.48.0
+
+Run `meson` to configure the build environment and then `ninja` to build
+
+    meson build --prefix=/usr
+    cd build
+    ninja
+
+To install, use `ninja install`
+
+    sudo ninja install
+
+## Building .deb Package
+
+Run `./build-deb.sh` to create a .deb package
+
+    ./build-deb.sh
+
+Upload the generated .deb file to GitHub releases.
+
+## Runtime Dependencies
+
+* git
+* meson
+* ninja-build
+* policykit-1
+
+## License
+
+MIT

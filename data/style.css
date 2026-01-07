@@ -1,0 +1,16 @@
+.log-view {
+  font-family: 'Monospace';
+  font-size: 10pt;
+}
+
+/* Smaller sidebar font */
+.small-sidebar {
+  font-size: 11pt;
+}
+
+.small-sidebar label {
+  font-size: 11pt;
+}
+
+
+

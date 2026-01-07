@@ -21,7 +21,6 @@ dependencies:
     - libzeitgeist-2.0-dev
     - meson
     - valac
-    - neofetch
 
 patches:
   - patches/calculator-crash-fix.patch
